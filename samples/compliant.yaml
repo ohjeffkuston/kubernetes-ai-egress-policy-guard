@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-api
+  namespace: ai-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inference-api
+  template:
+    metadata:
+      labels:
+        app: inference-api
+        platform.example.com/workload-class: ai-inference
+      annotations:
+        security.platform.example.com/approved-model-domains: api.openai.example,models.internal.example
+    spec:
+      serviceAccountName: inference-api
+      containers:
+        - name: api
+          image: ghcr.io/example/inference-api@sha256:0000000000000000000000000000000000000000000000000000000000000000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: ai-platform
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: inference-dns
+  namespace: ai-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: inference-api
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: inference-model-endpoints
+  namespace: ai-platform
+spec:
+  endpointSelector:
+    matchLabels:
+      app: inference-api
+  egress:
+    - toFQDNs:
+        - matchName: api.openai.example
+        - matchName: models.internal.example
+      toPorts:
+        - ports:
+            - {protocol: TCP, port: "443"}

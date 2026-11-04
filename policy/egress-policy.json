@@ -1,0 +1,8 @@
+{
+  "decision_order": ["BLOCK", "REVIEW", "PASS"],
+  "block_rules": ["EG001", "EG003", "EG004", "EG005", "EG006", "EG009", "EG010", "EG011"],
+  "review_rules": ["EG002", "EG007", "EG008", "EG012"],
+  "metadata_endpoints": ["169.254.169.254", "100.100.100.200"],
+  "model_transport": {"protocol": "TCP", "port": 443},
+  "ai_authority": "advisory-only"
+}
